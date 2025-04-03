@@ -1,6 +1,7 @@
 package tests;
 
 import models.*;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,8 +12,6 @@ import pages.OrderPage;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
-
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class OrderFlowTest extends BaseTest {
@@ -59,13 +58,21 @@ public class OrderFlowTest extends BaseTest {
     public void testOrderFlow() {
         logger.info("Тест начал выполняться: {}", testCaseName);
 
+        SoftAssertions softly = new SoftAssertions();
+
         try {
-            assertTrue("Кнопка заказа не найдена", mainPage.isOrderButtonPresent(buttonPositionType));
+            logger.debug("Проверяем наличие кнопки заказа");
+            softly.assertThat(mainPage.isOrderButtonPresent(buttonPositionType))
+                    .as("Кнопка заказа не найдена")
+                    .isTrue();
 
             logger.debug("Кликаем на кнопку заказа");
             OrderPage orderPage = mainPage.clickOrderButton(buttonPositionType);
 
-            assertTrue("Форма заказа не открылась", orderPage.isOrderFormPresent());
+            logger.debug("Проверяем наличие формы заказа");
+            softly.assertThat(orderPage.isOrderFormPresent())
+                    .as("Форма заказа не открылась")
+                    .isTrue();
 
             logger.debug("Заполняем форму личными данными");
             orderPage.fillOrderForm(user);
@@ -73,7 +80,10 @@ public class OrderFlowTest extends BaseTest {
             logger.debug("Переходим к следующему шагу");
             orderPage.clickNextButton();
 
-            assertTrue("Форма второго шага не загрузилась", orderPage.isSecondStepFormPresent());
+            logger.debug("Проверяем наличие формы второго шага");
+            softly.assertThat(orderPage.isSecondStepFormPresent())
+                    .as("Форма второго шага не загрузилась")
+                    .isTrue();
 
             logger.debug("Заполняем данные заказа");
             orderPage.fillOrderForm2(order);
@@ -81,14 +91,22 @@ public class OrderFlowTest extends BaseTest {
             logger.debug("Подтверждаем заказ");
             orderPage.clickOrderButton();
 
-            assertTrue("Модальное окно подтверждения не появилось", orderPage.isModalFormPresent());
+            logger.debug("Проверяем появление модального окна");
+            softly.assertThat(orderPage.isModalFormPresent())
+                    .as("Модальное окно подтверждения не появилось")
+                    .isTrue();
 
             logger.debug("Подтверждаем в модальном окне");
             orderPage.clickYesButton();
 
-            assertTrue("Сообщение об успешном заказе не отобразилось", orderPage.isSuccessMessagePresent());
+            logger.debug("Проверяем наличие сообщения об успешном заказе");
+            softly.assertThat(orderPage.isSuccessMessagePresent())
+                    .as("Сообщение об успешном заказе не отобразилось")
+                    .isTrue();
 
-        } catch (Exception e) {
+            softly.assertAll();
+
+        } catch (Throwable e) {
             logger.error("Ошибка при выполнении теста: {}", testCaseName, e);
             throw e;
         }
