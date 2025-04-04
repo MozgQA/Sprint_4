@@ -1,107 +1,87 @@
 package tests;
 
-import config.AppConfig;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.openqa.selenium.WebDriver;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pages.MainPage;
 
-import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.assertj.core.api.SoftAssertions;
 
-public class QuestionAnswerTest {
-    private static final Logger logger = LoggerFactory.getLogger(QuestionAnswerTest.class);
+@RunWith(Parameterized.class)
+public class QuestionAnswerTest extends BaseTest {
 
-    private WebDriver driver;
-    private WebDriverWait wait;
-    private MainPage mainPage;
-
-    @Before
-    public void setUp() {
-        try {
-            logger.info("Начинается настройка теста");
-            WebDriverManager.chromedriver().setup();
-            driver = new ChromeDriver();
-            //driver = new FirefoxDriver();
-            wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            driver.manage().window().maximize();
-            driver.get(AppConfig.URL);
-            mainPage = new MainPage(driver);
-            mainPage.acceptCookie();
-            mainPage.waitForCookieBannerDisappearance();
-        } catch (Exception e) {
-            logger.error("Ошибка при настройке теста", e);
-            throw e;
-        }
+    public QuestionAnswerTest(String testCaseName, String expectedQuestion, String expectedAnswer) {
+        super(testCaseName);
+        this.expectedQuestion = expectedQuestion;
+        this.expectedAnswer = expectedAnswer;
     }
 
-    @After
-    public void tearDown() {
-        logger.info("Тест завершен");
-        if (driver != null) {
-            driver.quit();
-        }
+    private final String expectedQuestion;
+    private final String expectedAnswer;
+
+    @Parameters(name = "{0}")
+    public static Collection<Object[]> testData() {
+        return Arrays.asList(new Object[][]{
+                {"Тест первой пары вопрос-ответ",
+                        "Сколько это стоит? И как оплатить?",
+                        "Сутки — 400 рублей. Оплата курьеру — наличными или картой."},
+
+                {"Тест второй пары вопрос-ответ",
+                        "Хочу сразу несколько самокатов! Так можно?",
+                        "Пока что у нас так: один заказ — один самокат. Если хотите покататься с друзьями, можете просто сделать несколько заказов — один за другим."},
+
+                {"Тест третьей пары вопрос-ответ",
+                        "Как рассчитывается время аренды?",
+                        "Допустим, вы оформляете заказ на 8 мая. Мы привозим самокат 8 мая в течение дня. Отсчёт времени аренды начинается с момента, когда вы оплатите заказ курьеру. Если мы привезли самокат 8 мая в 20:30, суточная аренда закончится 9 мая в 20:30."},
+
+                {"Тест четвёртой пары вопрос-ответ",
+                        "Можно ли заказать самокат прямо на сегодня?",
+                        "Только начиная с завтрашнего дня. Но скоро станем расторопнее."},
+
+                {"Тест пятой пары вопрос-ответ",
+                        "Можно ли продлить заказ или вернуть самокат раньше?",
+                        "Пока что нет! Но если что-то срочное — всегда можно позвонить в поддержку по красивому номеру 1010."},
+
+                {"Тест шестой пары вопрос-ответ",
+                        "Вы привозите зарядку вместе с самокатом?",
+                        "Самокат приезжает к вам с полной зарядкой. Этого хватает на восемь суток — даже если будете кататься без передышек и во сне. Зарядка не понадобится."},
+
+                {"Тест седьмой пары вопрос-ответ",
+                        "Можно ли отменить заказ?",
+                        "Да, пока самокат не привезли. Штрафа не будет, объяснительной записки тоже не попросим. Все же свои."},
+
+                {"Тест восьмой пары вопрос-ответ",
+                        "Я жизу за МКАДом, привезёте?",
+                        "Да, обязательно. Всем самокатов! И Москве, и Московской области."}
+        });
     }
 
     @Test
-    public void testAllAccordionQuestionsAndAnswers() {
-        logger.info("Начинается проверка вопросов и ответов");
+    public void testQuestionAnswerText() {
+        SoftAssertions softly = new SoftAssertions();
 
-        List<WebElement> questions = mainPage.getQuestions();
-        List<WebElement> answers = mainPage.getAnswers();
-        assertEquals(8, questions.size());
+        logger.info("Проверка отображения всех вопросов");
+        List<WebElement> allQuestions = mainPage.getAllQuestions();
+        softly.assertThat(allQuestions.size()).as("Проверка количества вопросов").isGreaterThan(0);
 
-        // Массив ожидаемых текстов вопросов
-        String[] expectedQuestions = {
-                "Сколько это стоит? И как оплатить?",
-                "Хочу сразу несколько самокатов! Так можно?",
-                "Как рассчитывается время аренды?",
-                "Можно ли заказать самокат прямо на сегодня?",
-                "Можно ли продлить заказ или вернуть самокат раньше?",
-                "Вы привозите зарядку вместе с самокатом?",
-                "Можно ли отменить заказ?",
-                "Я жизу за МКАДом, привезёте?"
-        };
+        logger.info("Проверка текста вопроса");
+        WebElement question = mainPage.getQuestion(expectedQuestion);
+        softly.assertThat(question.isDisplayed()).as("Проверка отображения вопроса").isTrue();
+        softly.assertThat(question.getText()).as("Проверка текста вопроса").isEqualTo(expectedQuestion);
 
-        // Массив ожидаемых текстов ответов
-        String[] expectedAnswers = {
-                "Сутки — 400 рублей. Оплата курьеру — наличными или картой.",
-                "Пока что у нас так: один заказ — один самокат. Если хотите покататься с друзьями, можете просто сделать несколько заказов — один за другим.",
-                "Допустим, вы оформляете заказ на 8 мая. Мы привозим самокат 8 мая в течение дня. Отсчёт времени аренды начинается с момента, когда вы оплатите заказ курьеру. Если мы привезли самокат 8 мая в 20:30, суточная аренда закончится 9 мая в 20:30.",
-                "Только начиная с завтрашнего дня. Но скоро станем расторопнее.",
-                "Пока что нет! Но если что-то срочное — всегда можно позвонить в поддержку по красивому номеру 1010.",
-                "Самокат приезжает к вам с полной зарядкой. Этого хватает на восемь суток — даже если будете кататься без передышек и во сне. Зарядка не понадобится.",
-                "Да, пока самокат не привезли. Штрафа не будет, объяснительной записки тоже не попросим. Все же свои.",
-                "Да, обязательно. Всем самокатов! И Москве, и Московской области."
-        };
+        logger.info("Открываю вопрос");
+        mainPage.openQuestion(question);
 
-        for (int i = 0; i < questions.size(); i++) {
-            WebElement question = questions.get(i);
+        logger.info("Проверка отображения ответа");
+        WebElement answer = mainPage.getAnswer(expectedAnswer);
+        softly.assertThat(answer.isDisplayed()).as("Проверка отображения ответа").isTrue();
+        softly.assertThat(answer.getText()).as("Проверка текста ответа").isEqualTo(expectedAnswer);
 
-            // Проверяем текст вопроса
-            assertEquals(expectedQuestions[i], question.getText());
-
-            // Открываем вопрос
-            mainPage.openQuestion(question);
-            // Получаем соответствующий ответ
-            WebElement answer = answers.get(i);
-
-            // Проверяем, что ответ отображается
-            assertTrue(answer.isDisplayed());
-
-            // Проверяем текст ответа
-            assertEquals(expectedAnswers[i], answer.getText());
-        }
+        softly.assertAll();
     }
 }

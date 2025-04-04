@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 
 /**
- * Базовый класс для всех страниц приложения
- * Содержит общие методы для работы с элементами страницы
+ * Базовый класс для всех страниц приложения.
+ * Содержит общие методы для работы с элементами страницы.
  */
 public class BasePage {
     private static final Logger log = LoggerFactory.getLogger(BasePage.class);
@@ -166,6 +166,22 @@ public class BasePage {
             log.info("Найден баннер с куками");
             clickOnElement(cookieButton, false);
             log.info("Куки приняты");
+        }
+    }
+
+    /**
+     * Проверяет наличие элемента на странице
+     *
+     * @param by Объект By для поиска элемента
+     * @return true, если элемент найден и отображается, иначе false
+     */
+    public boolean isElementPresent(By by) {
+        try {
+            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(by));
+            return element != null && element.isDisplayed();
+        } catch (TimeoutException e) {
+            log.error("Элемент по локатору {} не отобразился", by.toString());
+            return false;
         }
     }
 
