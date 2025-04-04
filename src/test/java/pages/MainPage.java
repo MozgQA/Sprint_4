@@ -1,6 +1,6 @@
 package pages;
 
-import models.ButtonPositionType;
+import model.ButtonType;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -50,23 +50,20 @@ public class MainPage extends BasePage {
         PageFactory.initElements(driver, this);
     }
 
-    public List<WebElement> getAllQuestions() {
-        WebElement container = waitForVisibility(rootContainer);
-        scrollToElement(container);
-        return driver.findElements(questionElements);
-    }
-
     /**
      * Переходит к вопросам и получает из них список
      *
      * @return список вопросов
      */
-    public WebElement getQuestion(String text) {
-        log.debug("Получаю вопрос");
+    public List<WebElement> getQuestions() {
+        log.debug("Получаю список вопросов");
         WebElement container = waitForVisibility(rootContainer);
         scrollToElement(container);
         List<WebElement> questions = driver.findElements(questionElements);
-        return questions.stream().filter(element -> element.getText().contains(text)).findFirst().orElse(null);
+        if (questions.isEmpty()) {
+            log.warn("Вопросы не найдены");
+        }
+        return questions;
     }
 
     /**
@@ -74,12 +71,22 @@ public class MainPage extends BasePage {
      *
      * @return список ответов
      */
-    public WebElement getAnswer(String text) {
-        log.debug("Получаю ответ");
-        WebElement container = waitForVisibility(rootContainer);
-        scrollToElement(container);
+    public List<WebElement> getAnswers() {
+        waitForVisibility(rootContainer);
         List<WebElement> answers = driver.findElements(answerElements);
-        return answers.stream().filter(element -> element.getText().contains(text)).findFirst().orElse(null);
+        if (answers.isEmpty()) {
+            log.warn("Ответы не найдены");
+        }
+        return answers;
+    }
+
+    /**
+     * Открывает указанный вопрос
+     *
+     * @param questionLocator локатор вопроса
+     */
+    public void openQuestion(By questionLocator) {
+        clickOnElement(questionLocator, true);
     }
 
     /**
@@ -96,9 +103,30 @@ public class MainPage extends BasePage {
         waitLoadAfterClick(webElement);
     }
 
-    public OrderPage clickOrderButton(ButtonPositionType buttonPositionType) {
-        log.debug("Кликаю на кнопку заказа: {}", buttonPositionType);
-        switch (buttonPositionType) {
+    /**
+     * Клик на кнопку заказа в верхней части страницы
+     *
+     * @return страницу оформления заказа
+     */
+    private OrderPage clickOrderButtonTop() {
+        clickOnElement(topOrderButton, false);
+        return new OrderPage(driver);
+    }
+
+    /**
+     * Клик на кнопку заказа в нижней части страницы
+     *
+     * @return страницу оформления заказа
+     */
+    private OrderPage clickOrderButtonBottom() {
+        clickOnElement(bottomOrderButton, false);
+        return new OrderPage(driver);
+    }
+
+
+    public OrderPage clickOrderButton(ButtonType buttonType) {
+        log.debug("Кликаю на кнопку заказа: {}", buttonType);
+        switch (buttonType) {
             case TOP:
                 clickOnElement(topOrderButton, false);
                 break;
@@ -109,22 +137,5 @@ public class MainPage extends BasePage {
                 throw new IllegalArgumentException("Неверный тип кнопки");
         }
         return new OrderPage(driver);
-    }
-
-    public Boolean isOrderButtonPresent(ButtonPositionType buttonPositionType) {
-        log.debug("Проверяю отображение кнопки заказа: {}", buttonPositionType);
-        By buttonLocator = null;
-
-        switch (buttonPositionType) {
-            case TOP:
-                buttonLocator = topOrderButton;
-                break;
-            case BOTTOM:
-                buttonLocator = bottomOrderButton;
-                break;
-        }
-
-        return isElementPresent(buttonLocator);
-
     }
 }
